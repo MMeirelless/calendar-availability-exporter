@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "calendar-availability-export"
+version = "0.1.0"
+description = "Export an anonymized weekly availability view from macOS Calendar.app"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "MB2 Analytics", email = "dev@mb2analytics.com" },
+]
+keywords = ["calendar", "macos", "eventkit", "availability", "privacy", "anonymization"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: MacOS X",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Scheduling",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "pyobjc-framework-EventKit>=10.0",
+    # matplotlib 3.9 is the first release compatible with NumPy 2.x.
+    # Lower versions hit `_ARRAY_API not found` against NumPy >= 2.
+    "matplotlib>=3.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+calendar-availability = "calendar_availability.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/mb2analytics/calendar-availability-export"
+Repository = "https://github.com/mb2analytics/calendar-availability-export"
+Issues = "https://github.com/mb2analytics/calendar-availability-export/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/calendar_availability"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+]
+ignore = [
+    "N802",  # function name lowercase (PyObjC uses underscores_with_colons)
+    "N803",  # argument name lowercase
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["calendar_availability"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"

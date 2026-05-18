@@ -34,6 +34,7 @@ struct Sidebar: View {
                 }
 
                 Section("Display") {
+                    Toggle("Include weekends", isOn: $options.includeWeekends)
                     Toggle("Hide event times", isOn: $options.hideEventTimes)
                 }
 

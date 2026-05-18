@@ -27,6 +27,7 @@ enum Exporter {
                 ? (options.lunchStartHour, options.lunchEndHour)
                 : nil,
             showTimes: !options.hideEventTimes,
+            includeWeekends: options.includeWeekends,
             timezone: options.timezone
         )
         .frame(width: outputSize.width, height: outputSize.height)

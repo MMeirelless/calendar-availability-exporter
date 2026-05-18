@@ -10,6 +10,7 @@ final class AvailabilityOptions {
     var lunchStartHour: Int = 12
     var lunchEndHour: Int = 14
     var hideEventTimes: Bool = false
+    var includeWeekends: Bool = true
     var selectedCalendarIDs: Set<String> = []   // empty == include all
 
     /// Timezone used for displaying the chart and computing day/week

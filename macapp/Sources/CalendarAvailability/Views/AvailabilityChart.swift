@@ -11,6 +11,7 @@ struct AvailabilityChart: View {
     let dayEndHour: Int
     let lunch: (start: Int, end: Int)?
     let showTimes: Bool
+    let includeWeekends: Bool
     let timezone: TimeZone
 
     var body: some View {
@@ -24,10 +25,11 @@ struct AvailabilityChart: View {
 
     private func draw(context: inout GraphicsContext, size: CGSize) {
         let cal = isoCalendar
-        let days: [Date] = (0..<7).compactMap {
+        let dayCount = includeWeekends ? 7 : 5
+        let days: [Date] = (0..<dayCount).compactMap {
             cal.date(byAdding: .day, value: $0, to: weekStart)
         }
-        guard days.count == 7 else { return }
+        guard days.count == dayCount else { return }
 
         let dayStartH = Double(dayStartHour)
         let dayEndH = Double(dayEndHour)
@@ -45,7 +47,7 @@ struct AvailabilityChart: View {
         let chartY = padding + titleHeight + subtitleHeight + headerHeight
         let chartWidth = size.width - chartX - padding
         let chartHeight = size.height - chartY - bottomPad
-        let colWidth = chartWidth / 7
+        let colWidth = chartWidth / CGFloat(dayCount)
 
         guard chartWidth > 50, chartHeight > 50 else { return }
 
@@ -108,7 +110,7 @@ struct AvailabilityChart: View {
         }
 
         // --- Day column dividers ------------------------------------------
-        for i in 0...7 {
+        for i in 0...dayCount {
             let x = chartX + CGFloat(i) * colWidth
             var line = Path()
             line.move(to: CGPoint(x: x, y: chartY))

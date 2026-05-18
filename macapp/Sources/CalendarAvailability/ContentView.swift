@@ -58,8 +58,7 @@ struct ContentView: View {
     private func handleGenerate() {
         guard let image = Exporter.renderImage(
             events: events,
-            options: options,
-            paletteIndex: service.paletteIndex
+            options: options
         ) else {
             showToast(icon: "xmark.octagon.fill",
                       title: "Couldn't render image",
@@ -77,8 +76,7 @@ struct ContentView: View {
     private func handleSave() {
         guard let image = Exporter.renderImage(
             events: events,
-            options: options,
-            paletteIndex: service.paletteIndex
+            options: options
         ) else { return }
         let suggested = "availability_\(options.weekISOLabel)"
         if let url = Exporter.savePNG(image: image, suggestedName: suggested) {

@@ -17,8 +17,6 @@ struct CalendarFilterList: View {
     }
 
     private func row(for title: String, id: String) -> some View {
-        let idx = service.paletteIndex(for: title)
-        let color = Theme.palette[idx % Theme.palette.count]
         let isOn = Binding(
             get: { options.selectedCalendarIDs.contains(id) },
             set: { on in
@@ -29,10 +27,10 @@ struct CalendarFilterList: View {
 
         return Toggle(isOn: isOn) {
             HStack(spacing: 8) {
-                Circle()
-                    .fill(color)
-                    .frame(width: 10, height: 10)
-                    .overlay(Circle().stroke(.white.opacity(0.15), lineWidth: 0.5))
+                Image(systemName: "calendar")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 14)
                 Text(title)
                     .lineLimit(1)
                     .truncationMode(.tail)

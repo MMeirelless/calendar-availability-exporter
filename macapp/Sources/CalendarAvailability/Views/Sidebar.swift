@@ -16,6 +16,10 @@ struct Sidebar: View {
                     weekRow
                 }
 
+                Section("Timezone") {
+                    timezonePicker
+                }
+
                 Section("Day Range") {
                     hourStepper(label: "Start", value: $options.dayStartHour, range: 0...23)
                     hourStepper(label: "End",   value: $options.dayEndHour,   range: 1...24)
@@ -91,9 +95,37 @@ struct Sidebar: View {
     private var weekRangeLabel: String {
         let f = DateFormatter()
         f.dateFormat = "MMM d"
+        f.timeZone = options.timezone
         let start = f.string(from: options.weekStart)
         let end = f.string(from: options.weekEnd)
         return "\(start) – \(end)"
+    }
+
+    // MARK: - Timezone picker
+
+    private var timezonePicker: some View {
+        @Bindable var options = options
+        return Picker(selection: $options.timezone) {
+            Section("Common") {
+                ForEach(TimeZones.common, id: \.identifier) { tz in
+                    Text(TimeZones.displayName(tz)).tag(tz)
+                }
+            }
+            Section("All") {
+                ForEach(TimeZones.all, id: \.identifier) { tz in
+                    Text(TimeZones.displayName(tz)).tag(tz)
+                }
+            }
+        } label: {
+            HStack {
+                Text("Zone")
+                Spacer()
+                Text(TimeZones.gmtOffsetLabel(options.timezone))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .pickerStyle(.menu)
     }
 
     // MARK: - Hour stepper

@@ -12,23 +12,33 @@ final class AvailabilityOptions {
     var hideEventTimes: Bool = false
     var selectedCalendarIDs: Set<String> = []   // empty == include all
 
+    /// Timezone used for displaying the chart and computing day/week
+    /// boundaries. Defaults to the system timezone. Changing this
+    /// preserves the ISO week being viewed — the start moment is
+    /// recomputed so the same Monday–Sunday window stays visible.
+    var timezone: TimeZone {
+        didSet { rebaseWeekStart(from: oldValue) }
+    }
+
     init() {
-        self.weekStart = Self.startOfISOWeek(containing: Date())
+        let tz = TimeZone.current
+        self.timezone = tz
+        self.weekStart = Self.startOfISOWeek(containing: Date(), in: tz)
     }
 
     var weekEnd: Date {
-        Self.isoCalendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+        isoCalendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
     }
 
     var fetchWindow: (start: Date, end: Date) {
-        let start = Self.isoCalendar.startOfDay(for: weekStart)
-        let end = Self.isoCalendar.date(byAdding: .day, value: 7, to: start)!
+        let start = isoCalendar.startOfDay(for: weekStart)
+        let end = isoCalendar.date(byAdding: .day, value: 7, to: start)!
             .addingTimeInterval(-1)
         return (start, end)
     }
 
     var weekISOLabel: String {
-        let comps = Self.isoCalendar.dateComponents(
+        let comps = isoCalendar.dateComponents(
             [.yearForWeekOfYear, .weekOfYear], from: weekStart
         )
         return String(format: "%d-W%02d",
@@ -37,23 +47,42 @@ final class AvailabilityOptions {
     }
 
     func step(weeks: Int) {
-        if let d = Self.isoCalendar.date(byAdding: .weekOfYear, value: weeks, to: weekStart) {
-            weekStart = Self.startOfISOWeek(containing: d)
+        if let d = isoCalendar.date(byAdding: .weekOfYear, value: weeks, to: weekStart) {
+            weekStart = Self.startOfISOWeek(containing: d, in: timezone)
         }
     }
 
     func resetToCurrentWeek() {
-        weekStart = Self.startOfISOWeek(containing: Date())
+        weekStart = Self.startOfISOWeek(containing: Date(), in: timezone)
     }
 
-    static func startOfISOWeek(containing date: Date) -> Date {
-        let comps = isoCalendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
-        return isoCalendar.date(from: comps) ?? date
-    }
-
-    private static var isoCalendar: Calendar = {
+    var isoCalendar: Calendar {
         var cal = Calendar(identifier: .iso8601)
-        cal.timeZone = .current
+        cal.timeZone = timezone
         return cal
-    }()
+    }
+
+    // MARK: - Timezone change handling
+
+    /// Re-anchor weekStart so the visible ISO week stays the same when
+    /// the user switches timezones (otherwise the moment-stored Date
+    /// would silently shift the displayed days by the offset delta).
+    private func rebaseWeekStart(from oldTZ: TimeZone) {
+        var oldCal = Calendar(identifier: .iso8601)
+        oldCal.timeZone = oldTZ
+        let comps = oldCal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: weekStart)
+
+        var newCal = Calendar(identifier: .iso8601)
+        newCal.timeZone = timezone
+        if let rebased = newCal.date(from: comps) {
+            weekStart = rebased
+        }
+    }
+
+    static func startOfISOWeek(containing date: Date, in tz: TimeZone) -> Date {
+        var cal = Calendar(identifier: .iso8601)
+        cal.timeZone = tz
+        let comps = cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
+        return cal.date(from: comps) ?? date
+    }
 }

@@ -16,8 +16,7 @@ enum Exporter {
     /// Renders the chart at high resolution and returns the NSImage.
     static func renderImage(
         events: [AnonymizedEvent],
-        options: AvailabilityOptions,
-        paletteIndex: @escaping (String) -> Int
+        options: AvailabilityOptions
     ) -> NSImage? {
         let chart = AvailabilityChart(
             events: events,
@@ -28,7 +27,7 @@ enum Exporter {
                 ? (options.lunchStartHour, options.lunchEndHour)
                 : nil,
             showTimes: !options.hideEventTimes,
-            paletteIndex: paletteIndex
+            timezone: options.timezone
         )
         .frame(width: outputSize.width, height: outputSize.height)
         .background(Theme.bg)

@@ -1,10 +1,9 @@
 import SwiftUI
 
-/// The availability grid. Mirrors `src/calendar_availability/render.py`
-/// so the in-app preview matches the exported PNG.
-///
-/// Drawn entirely in a `Canvas` so it renders crisply at any size and
-/// can be rasterized by `ImageRenderer` for export with no layout drift.
+/// The availability grid. Mirrors the spirit of the Python renderer, but
+/// renders all events in a single "occupied" color (same as the lunch
+/// band) so the screenshot reads as available vs. blocked time rather
+/// than as a calendar legend. No per-calendar palette, no legend.
 struct AvailabilityChart: View {
     let events: [AnonymizedEvent]
     let weekStart: Date
@@ -12,39 +11,7 @@ struct AvailabilityChart: View {
     let dayEndHour: Int
     let lunch: (start: Int, end: Int)?
     let showTimes: Bool
-    /// Stable mapping from calendar title to palette index, so colors
-    /// don't shuffle when the visible event set changes between weeks.
-    let paletteIndex: (String) -> Int
-
-    private static let dayHeader: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "EEE"
-        return f
-    }()
-
-    private static let daySub: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d"
-        return f
-    }()
-
-    private static let titleFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "EEE MMM d"
-        return f
-    }()
-
-    private static let titleEndFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "EEE MMM d, yyyy"
-        return f
-    }()
-
-    private static let timeFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm"
-        return f
-    }()
+    let timezone: TimeZone
 
     var body: some View {
         Canvas(rendersAsynchronously: false) { context, size in
@@ -56,7 +23,7 @@ struct AvailabilityChart: View {
     // MARK: - Drawing
 
     private func draw(context: inout GraphicsContext, size: CGSize) {
-        let cal = Self.isoCalendar
+        let cal = isoCalendar
         let days: [Date] = (0..<7).compactMap {
             cal.date(byAdding: .day, value: $0, to: weekStart)
         }
@@ -68,21 +35,25 @@ struct AvailabilityChart: View {
 
         // --- Layout --------------------------------------------------------
         let padding: CGFloat = 24
-        let titleHeight: CGFloat = 28
+        let titleHeight: CGFloat = 22
+        let subtitleHeight: CGFloat = 18
         let headerHeight: CGFloat = 44
         let leftAxis: CGFloat = 56
         let bottomPad: CGFloat = 16
 
         let chartX = padding + leftAxis
-        let chartY = padding + titleHeight + headerHeight
+        let chartY = padding + titleHeight + subtitleHeight + headerHeight
         let chartWidth = size.width - chartX - padding
         let chartHeight = size.height - chartY - bottomPad
         let colWidth = chartWidth / 7
 
         guard chartWidth > 50, chartHeight > 50 else { return }
 
-        // --- Title ---------------------------------------------------------
-        let title = "Availability: \(Self.titleFmt.string(from: days.first!)) to \(Self.titleEndFmt.string(from: days.last!))"
+        // --- Title + timezone subtitle ------------------------------------
+        let titleFmt = dateFormatter("EEE MMM d")
+        let titleEndFmt = dateFormatter("EEE MMM d, yyyy")
+        let title = "Availability: \(titleFmt.string(from: days.first!)) to \(titleEndFmt.string(from: days.last!))"
+
         context.draw(
             Text(title)
                 .font(.system(size: 14, weight: .semibold))
@@ -91,17 +62,28 @@ struct AvailabilityChart: View {
             anchor: .leading
         )
 
+        let tzLabel = "\(timezone.identifier) • \(TimeZones.gmtOffsetLabel(timezone))"
+        context.draw(
+            Text(tzLabel)
+                .font(.system(size: 11))
+                .foregroundStyle(Theme.muted),
+            at: CGPoint(x: padding, y: padding + titleHeight + subtitleHeight / 2),
+            anchor: .leading
+        )
+
         // --- Day headers ---------------------------------------------------
+        let dayHeaderFmt = dateFormatter("EEE")
+        let daySubFmt = dateFormatter("MMM d")
         for (i, d) in days.enumerated() {
             let cx = chartX + CGFloat(i) * colWidth + colWidth / 2
             context.draw(
-                Text(Self.dayHeader.string(from: d).uppercased())
+                Text(dayHeaderFmt.string(from: d).uppercased())
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Theme.text),
                 at: CGPoint(x: cx, y: chartY - headerHeight + 14)
             )
             context.draw(
-                Text(Self.daySub.string(from: d))
+                Text(daySubFmt.string(from: d))
                     .font(.system(size: 10))
                     .foregroundStyle(Theme.muted),
                 at: CGPoint(x: cx, y: chartY - headerHeight + 30)
@@ -152,10 +134,9 @@ struct AvailabilityChart: View {
             }
         }
 
-        // --- Events --------------------------------------------------------
-        var calendarsSeen: [String: Color] = [:]
+        // --- Events (single "occupied" color) -----------------------------
+        let timeFmt = dateFormatter("HH:mm")
 
-        // First pass: timed events.
         for ev in events where !ev.isAllDay {
             guard let dayIdx = dayIndex(of: ev.start, in: days) else { continue }
 
@@ -166,9 +147,6 @@ struct AvailabilityChart: View {
             let clampedStart = max(sH, dayStartH)
             let clampedEnd = min(eH, dayEndH)
 
-            let color = Theme.palette[paletteIndex(ev.calendar) % Theme.palette.count]
-            calendarsSeen[ev.calendar] = color
-
             let xLeft = chartX + CGFloat(dayIdx) * colWidth + colWidth * 0.08
             let yTop = chartY + CGFloat((clampedStart - dayStartH) / totalHours) * chartHeight
             let w = colWidth * 0.84
@@ -176,11 +154,11 @@ struct AvailabilityChart: View {
 
             let rect = CGRect(x: xLeft, y: yTop, width: w, height: h)
             let rounded = Path(roundedRect: rect, cornerRadius: 4)
-            context.fill(rounded, with: .color(color.opacity(0.78)))
-            context.stroke(rounded, with: .color(color), lineWidth: 0.5)
+            context.fill(rounded, with: .color(Theme.occupied.opacity(0.78)))
+            context.stroke(rounded, with: .color(Theme.occupied), lineWidth: 0.5)
 
             if showTimes && h >= 18 {
-                let label = "\(Self.timeFmt.string(from: ev.start)) : \(Self.timeFmt.string(from: ev.end))"
+                let label = "\(timeFmt.string(from: ev.start)) : \(timeFmt.string(from: ev.end))"
                 context.draw(
                     Text(label)
                         .font(.system(size: 9, weight: .bold))
@@ -190,15 +168,12 @@ struct AvailabilityChart: View {
             }
         }
 
-        // Second pass: all-day events as strips above the chart.
+        // All-day events as small strips above the chart, same occupied color.
         var allDayCount: [Int: Int] = [:]
         for ev in events where ev.isAllDay {
             guard let dayIdx = dayIndex(of: ev.start, in: days) else { continue }
             let slot = allDayCount[dayIdx, default: 0]
             allDayCount[dayIdx] = slot + 1
-
-            let color = Theme.palette[paletteIndex(ev.calendar) % Theme.palette.count]
-            calendarsSeen[ev.calendar] = color
 
             let stripH: CGFloat = 6
             let gap: CGFloat = 2
@@ -206,88 +181,86 @@ struct AvailabilityChart: View {
             let xLeft = chartX + CGFloat(dayIdx) * colWidth + colWidth * 0.08
             let rect = CGRect(x: xLeft, y: stripY, width: colWidth * 0.84, height: stripH)
             context.fill(Path(roundedRect: rect, cornerRadius: 2),
-                         with: .color(color.opacity(0.55)))
+                         with: .color(Theme.occupied.opacity(0.65)))
         }
 
         // --- Legend (bottom-right) ----------------------------------------
-        if !calendarsSeen.isEmpty {
-            drawLegend(context: &context,
-                       calendars: calendarsSeen,
-                       chartX: chartX,
-                       chartY: chartY,
-                       chartWidth: chartWidth,
-                       chartHeight: chartHeight)
-        }
+        drawLegend(context: &context,
+                   chartX: chartX,
+                   chartY: chartY,
+                   chartWidth: chartWidth,
+                   chartHeight: chartHeight)
     }
 
+    /// Single legend entry explaining that filled blocks are blocked time.
     private func drawLegend(
         context: inout GraphicsContext,
-        calendars: [String: Color],
         chartX: CGFloat,
         chartY: CGFloat,
         chartWidth: CGFloat,
         chartHeight: CGFloat
     ) {
-        // Order matches paletteIndex so labels stay stable across weeks.
-        let ordered = calendars.sorted { paletteIndex($0.key) < paletteIndex($1.key) }
-        let rowHeight: CGFloat = 16
-        let padX: CGFloat = 10
+        let padX: CGFloat = 12
         let padY: CGFloat = 8
-        let swatchSize: CGFloat = 10
-        let labelGap: CGFloat = 6
-        let maxLabelWidth: CGFloat = 70
+        let rowHeight: CGFloat = 18
+        let swatchSize: CGFloat = 12
+        let labelGap: CGFloat = 8
+        let labelW: CGFloat = 110  // fits "Filled = Unavailable" at 11pt
 
-        let boxW: CGFloat = padX * 2 + swatchSize + labelGap + maxLabelWidth
-        let boxH: CGFloat = padY * 2 + CGFloat(ordered.count) * rowHeight
+        let boxW = padX * 2 + swatchSize + labelGap + labelW
+        let boxH = padY * 2 + rowHeight
 
         let boxX = chartX + chartWidth - boxW - 8
         let boxY = chartY + chartHeight - boxH - 8
 
         let bg = Path(roundedRect: CGRect(x: boxX, y: boxY, width: boxW, height: boxH),
                       cornerRadius: 8)
-        context.fill(bg, with: .color(Theme.surface.opacity(0.9)))
+        context.fill(bg, with: .color(Theme.surface.opacity(0.92)))
         context.stroke(bg, with: .color(Theme.grid), lineWidth: 0.5)
 
-        for (i, (_, color)) in ordered.enumerated() {
-            let rowY = boxY + padY + CGFloat(i) * rowHeight + rowHeight / 2
+        let rowY = boxY + padY + rowHeight / 2
+        let swatch = Path(
+            roundedRect: CGRect(x: boxX + padX,
+                                y: rowY - swatchSize / 2,
+                                width: swatchSize,
+                                height: swatchSize),
+            cornerRadius: 3
+        )
+        context.fill(swatch, with: .color(Theme.occupied.opacity(0.85)))
 
-            let swatch = Path(
-                roundedRect: CGRect(x: boxX + padX,
-                                    y: rowY - swatchSize / 2,
-                                    width: swatchSize,
-                                    height: swatchSize),
-                cornerRadius: 2
-            )
-            context.fill(swatch, with: .color(color.opacity(0.85)))
-
-            context.draw(
-                Text("Calendar \(i + 1)")
-                    .font(.system(size: 10))
-                    .foregroundStyle(Theme.text),
-                at: CGPoint(x: boxX + padX + swatchSize + labelGap, y: rowY),
-                anchor: .leading
-            )
-        }
+        context.draw(
+            Text("Filled = Unavailable")
+                .font(.system(size: 11))
+                .foregroundStyle(Theme.text),
+            at: CGPoint(x: boxX + padX + swatchSize + labelGap, y: rowY),
+            anchor: .leading
+        )
     }
 
     // MARK: - Helpers
 
+    private var isoCalendar: Calendar {
+        var cal = Calendar(identifier: .iso8601)
+        cal.timeZone = timezone
+        return cal
+    }
+
+    private func dateFormatter(_ pattern: String) -> DateFormatter {
+        let f = DateFormatter()
+        f.dateFormat = pattern
+        f.timeZone = timezone
+        return f
+    }
+
     private func decimalHour(of date: Date) -> Double {
-        let comps = Self.isoCalendar.dateComponents([.hour, .minute, .second], from: date)
+        let comps = isoCalendar.dateComponents([.hour, .minute, .second], from: date)
         return Double(comps.hour ?? 0)
             + Double(comps.minute ?? 0) / 60
             + Double(comps.second ?? 0) / 3600
     }
 
     private func dayIndex(of date: Date, in days: [Date]) -> Int? {
-        let cal = Self.isoCalendar
-        let target = cal.startOfDay(for: date)
-        return days.firstIndex { cal.isDate($0, inSameDayAs: target) }
+        let cal = isoCalendar
+        return days.firstIndex { cal.isDate($0, inSameDayAs: date) }
     }
-
-    private static var isoCalendar: Calendar = {
-        var cal = Calendar(identifier: .iso8601)
-        cal.timeZone = .current
-        return cal
-    }()
 }

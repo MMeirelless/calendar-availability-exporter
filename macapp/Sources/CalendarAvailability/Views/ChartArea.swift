@@ -36,7 +36,7 @@ struct ChartArea: View {
                 ? (options.lunchStartHour, options.lunchEndHour)
                 : nil,
             showTimes: !options.hideEventTimes,
-            paletteIndex: service.paletteIndex
+            timezone: options.timezone
         )
         .padding(20)
     }

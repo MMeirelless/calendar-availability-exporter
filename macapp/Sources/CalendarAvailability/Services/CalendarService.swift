@@ -16,7 +16,10 @@ final class CalendarService {
         case error(String)
     }
 
-    private let store = EKEventStore()
+    /// EKEventStore is documented thread-safe; opt it out of the MainActor
+    /// isolation so we can `await store.requestFullAccessToEvents()` without
+    /// Swift 6 flagging a data race on `self.store`.
+    nonisolated(unsafe) private let store = EKEventStore()
 
     var status: Status = .unknown
     var calendars: [EKCalendar] = []
@@ -24,7 +27,7 @@ final class CalendarService {
     func requestAccess() async {
         let current = EKEventStore.authorizationStatus(for: .event)
         if current == .fullAccess {
-            await loadCalendars()
+            loadCalendars()
             status = .granted
             return
         }
@@ -37,7 +40,7 @@ final class CalendarService {
         do {
             let granted = try await store.requestFullAccessToEvents()
             if granted {
-                await loadCalendars()
+                loadCalendars()
                 status = .granted
             } else {
                 status = .denied
@@ -47,7 +50,7 @@ final class CalendarService {
         }
     }
 
-    private func loadCalendars() async {
+    private func loadCalendars() {
         calendars = store.calendars(for: .event)
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
@@ -82,14 +85,4 @@ final class CalendarService {
         }
     }
 
-    /// Returns a stable color index per calendar, based on its position in
-    /// the sorted calendar list. Used so colors don't shuffle as the week
-    /// changes (only the calendars actually present in the current week
-    /// would otherwise affect the order).
-    func paletteIndex(for calendarTitle: String) -> Int {
-        if let i = calendars.firstIndex(where: { $0.title == calendarTitle }) {
-            return i
-        }
-        return abs(calendarTitle.hashValue)
-    }
 }

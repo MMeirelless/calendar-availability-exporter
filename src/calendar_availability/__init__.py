@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 from .models import AnonymizedEvent
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __all__ = ["AnonymizedEvent", "fetch_events", "render", "__version__"]
 
 

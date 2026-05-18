@@ -1,8 +1,23 @@
-# calendar-availability-export
+# calendar-availability-exporter
 
-Export an anonymized weekly availability view from macOS Calendar.app using EventKit. Share your schedule without leaking event titles, attendees, notes, or locations.
+Share your weekly availability without leaking what's on your calendar. Reads only the structural metadata of your events — start time, end time, source calendar, all-day flag — and renders a fresh image from that. Event titles, attendees, notes, and locations are never loaded into memory in the first place, so there is nothing to redact.
 
-> **Status:** v0.1.0, macOS only. Tested on Python 3.10+ and macOS 14/15.
+> **Status:** v1.0.0 — stable. The Mac app requires macOS 26 (Tahoe); the Python CLI runs on macOS 11+ with Python 3.10+.
+
+## Two ways to use it
+
+|                 | **Mac app** *(recommended)*                                       | **Python CLI**                                  |
+|-----------------|-------------------------------------------------------------------|-------------------------------------------------|
+| Best for        | Daily ad-hoc use, sharing in Slack/email                          | Automation, scripting, scheduled exports        |
+| UI              | Native SwiftUI with Liquid Glass                                  | Command line                                    |
+| Requires        | macOS 26 (Tahoe)                                                  | macOS 11+, Python 3.10+                         |
+| Output          | Clipboard (one click) or PNG                                      | PNG file                                        |
+| Install         | Drop the prebuilt `.app` from [Releases][releases] into `/Applications` | `pip install -e .`                          |
+| Source          | [`macapp/`](macapp/)                                              | [`src/calendar_availability/`](src/calendar_availability/) |
+
+Both share the same anonymization model described below.
+
+[releases]: ../../releases/latest
 
 ## Why this exists
 
@@ -12,45 +27,51 @@ When someone asks *"when are you free next week?"*, the usual options are:
 2. Share your full calendar: leaks confidential meeting details.
 3. Screenshot Calendar.app and manually black out titles: fragile and slow.
 
-This tool takes a different path. It reads only the structural metadata of your events (start time, end time, source calendar, all-day flag) and renders a fresh image from that. Event titles, descriptions, attendees, and locations are never loaded into memory in the first place, so there is nothing to redact.
-
-## How it works
-
-1. Connects to EventKit through PyObjC, using the same Apple framework Calendar.app itself uses.
-2. Loads only start, end, calendar name, and the all-day flag for each event in the requested window.
-3. Renders a dark themed weekly grid with matplotlib. Blocks are colored by calendar. Time labels are optional.
-4. Outputs a PNG ready to share over Slack, email, or anywhere else.
-
-Recurring events are expanded automatically by EventKit. Calendar names are masked to generic labels (`Calendar 1`, `Calendar 2`) in the legend so even the calendar inventory is not disclosed.
+This tool takes a different path. It reads only the structural metadata of your events and renders a fresh image from that. Recurring events are expanded automatically by EventKit.
 
 ## Anonymization model
 
-The data flow is deliberately narrow. The `AnonymizedEvent` dataclass exposes exactly four fields:
+The data flow is deliberately narrow. The `AnonymizedEvent` model exposes exactly four fields:
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `start` | `datetime` | When the event begins |
-| `end` | `datetime` | When the event ends |
-| `calendar` | `str` | Used only for color grouping |
-| `all_day` | `bool` | Render as a top strip instead of a block |
+| Field      | Type       | Purpose                                |
+|------------|------------|----------------------------------------|
+| `start`    | `datetime` | When the event begins                  |
+| `end`      | `datetime` | When the event ends                    |
+| `calendar` | `str`      | Source calendar title (filter only)    |
+| `all_day`  | `bool`     | Render as a top strip instead of a block |
 
 Title, notes, location, attendees, URLs, and attachments are never read from the EventKit objects. They cannot end up in logs, debug output, swap, or the rendered PNG because they are never loaded.
 
-This is anonymization by construction, not by post-hoc redaction.
+This is anonymization by construction, not post-hoc redaction. The Swift `AnonymizedEvent` in the Mac app mirrors the same boundary.
 
-## Requirements
+In the Mac app, all events render in a single "occupied" color so the output reads as available vs. blocked time, never as a leak of *which* calendar an event belongs to. In the CLI, events are still colored per calendar with generic legend labels (`Calendar 1`, `Calendar 2`, …) — calendar names never appear in the output image.
 
-- macOS 11 (Big Sur) or later
-- Python 3.10 or newer
-- A Calendar.app account with at least one calendar configured
+---
 
-## Installation
+## Mac app
 
-Use a project local virtual environment. Conda's `base` environment mixes pip and conda state and can produce ABI mismatches between matplotlib and NumPy.
+The native app lives in [`macapp/`](macapp/). See [`macapp/README.md`](macapp/README.md) for build and install instructions, or grab a prebuilt `.app` from the [Releases page][releases] (every push to `main` that touches `macapp/` publishes a fresh `.zip` via GitHub Actions).
+
+Features:
+
+- Live weekly chart with hour grid, day columns, and ISO-week navigation.
+- Timezone picker (defaults to the system timezone, shown as a subtitle on the chart).
+- Adjustable day range and lunch overlay.
+- Calendar multi-select filter.
+- Toggle to include or exclude weekends.
+- **Generate & Copy** (⌘↩) renders at 3600×2200 and puts the PNG on your clipboard for paste-anywhere workflows. **Save as PNG…** (⌘S) writes a file *and* copies.
+
+## Python CLI
+
+The CLI lives in [`src/calendar_availability/`](src/calendar_availability/) and works on any macOS 11+ system with Python 3.10+. Useful for automated/scheduled exports.
+
+### Installation
+
+Use a project-local virtual environment. Conda's `base` environment mixes pip and conda state and can produce ABI mismatches between matplotlib and NumPy.
 
 ```bash
-git clone https://github.com/mb2analytics/calendar-availability-export.git
-cd calendar-availability-export
+git clone https://github.com/MMeirelless/calendar-availability-exporter.git
+cd calendar-availability-exporter
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
@@ -65,9 +86,9 @@ pip install -r requirements.txt
 python -m calendar_availability --help
 ```
 
-### Anaconda users
+#### Anaconda users
 
-If you are on anaconda, prefer a dedicated env over `base`:
+Prefer a dedicated env over `base`:
 
 ```bash
 conda create -n cal-availability python=3.12 -y
@@ -75,7 +96,7 @@ conda activate cal-availability
 pip install -e .
 ```
 
-### Troubleshooting matplotlib
+#### Troubleshooting matplotlib
 
 If you see `_ARRAY_API not found` or `numpy.core.multiarray failed to import`, matplotlib was compiled against NumPy 1.x and your environment has NumPy 2.x. matplotlib 3.9 is the first release with NumPy 2 support. Upgrade matplotlib inside your active env:
 
@@ -85,7 +106,7 @@ pip install -U "matplotlib>=3.9"
 
 This is the symptom you get when running directly inside Anaconda's `base` without a fresh env.
 
-## First run: grant Calendar access
+### First run: grant Calendar access
 
 On the first run, macOS displays a permission prompt for Calendar access. Approve it.
 
@@ -97,7 +118,7 @@ System Settings > Privacy & Security > Calendars
 
 If access is revoked or denied, the tool exits with a clear message pointing to the same path.
 
-## Usage
+### Usage
 
 Basic week export:
 
@@ -140,7 +161,7 @@ Run as a module without installing the entry point:
 python -m calendar_availability --start 2026-05-18 --end 2026-05-22
 ```
 
-## Configuration reference
+### Configuration reference
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -153,42 +174,7 @@ python -m calendar_availability --start 2026-05-18 --end 2026-05-22
 | `--lunch` | none | Lunch overlay window, e.g. `12:00-14:00` |
 | `--no-times` | off | Hide `HH:MM` labels inside event blocks |
 
-## Project structure
-
-```
-calendar-availability-export/
-├── README.md
-├── LICENSE
-├── CHANGELOG.md
-├── pyproject.toml
-├── requirements.txt
-├── Makefile
-├── .gitignore
-├── .editorconfig
-├── src/
-│   └── calendar_availability/
-│       ├── __init__.py           # Package init, version, public API
-│       ├── __main__.py           # Enables `python -m calendar_availability`
-│       ├── cli.py                # argparse, validates input, orchestrates
-│       ├── eventkit_client.py    # EventKit access, permission handling
-│       ├── models.py             # AnonymizedEvent dataclass (anonymization boundary)
-│       ├── render.py             # matplotlib rendering
-│       └── theme.py              # Color palette constants
-├── examples/
-│   ├── README.md
-│   └── weekly_export.sh          # Wrapper used by launchd
-├── tests/
-│   ├── __init__.py
-│   └── test_models.py            # Asserts AnonymizedEvent stays minimal
-└── docs/
-    └── (screenshots)
-```
-
-## Automating weekly exports
-
-A shell wrapper plus a launchd agent is the cleanest way to regenerate the current week on a schedule. See [`examples/weekly_export.sh`](examples/weekly_export.sh) and the launchd snippet in [`examples/README.md`](examples/README.md).
-
-For ad hoc automation in your existing pipelines, the same modules expose a Python API:
+### Python API
 
 ```python
 from datetime import date, datetime, time
@@ -221,7 +207,11 @@ render(
 )
 ```
 
-## Development
+### Automating weekly exports
+
+A shell wrapper plus a launchd agent is the cleanest way to regenerate the current week on a schedule. See [`examples/weekly_export.sh`](examples/weekly_export.sh) and the launchd snippet in [`examples/README.md`](examples/README.md).
+
+### Development
 
 ```bash
 make install    # Editable install with dev dependencies
@@ -231,14 +221,56 @@ make test       # pytest
 make clean      # Remove build artifacts and caches
 ```
 
+---
+
+## Project structure
+
+```
+calendar-availability-exporter/
+├── README.md
+├── LICENSE
+├── CHANGELOG.md
+├── pyproject.toml
+├── requirements.txt
+├── Makefile
+├── .gitignore
+├── .github/
+│   └── workflows/
+│       └── release-macapp.yml          # Builds + publishes .app on push to main
+├── src/
+│   └── calendar_availability/
+│       ├── __init__.py                 # Package init, version, public API
+│       ├── __main__.py                 # Enables `python -m calendar_availability`
+│       ├── cli.py                      # argparse, validates input, orchestrates
+│       ├── eventkit_client.py          # EventKit access, permission handling
+│       ├── models.py                   # AnonymizedEvent (anonymization boundary)
+│       ├── render.py                   # matplotlib rendering
+│       └── theme.py                    # Color palette constants
+├── macapp/                             # Native SwiftUI Mac app — see macapp/README.md
+│   ├── Package.swift
+│   ├── Info.plist
+│   ├── build.sh                        # Build the .app bundle
+│   ├── install.sh                      # Copy bundle into /Applications
+│   ├── Resources/AppIcon.png           # 1024×1024 source for the app icon
+│   └── Sources/CalendarAvailability/   # SwiftUI app sources
+├── examples/
+│   ├── README.md
+│   └── weekly_export.sh                # CLI wrapper used by launchd
+├── tests/
+│   ├── __init__.py
+│   └── test_models.py                  # Asserts AnonymizedEvent stays minimal
+└── docs/
+    └── (screenshots)
+```
+
 ## Roadmap
 
 - ICS file fallback for non-macOS systems (read exported `.ics` instead of EventKit)
 - SVG output for vector sharing
-- Configurable timezone display for cross-region scheduling
 - `--free` inverse mode that highlights free slots instead of busy slots
 - Microsoft 365 backend (read availability from Outlook directly)
-- Multi-week view (4 week strip for longer planning horizons)
+- Multi-week view (4-week strip for longer planning horizons)
+- Developer ID signing + notarization for the Mac app (drops the right-click → Open friction on first launch)
 
 ## License
 

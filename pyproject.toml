@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "calendar-availability-export"
-version = "0.1.0"
+name = "calendar-availability-exporter"
+version = "1.0.0"
 description = "Export an anonymized weekly availability view from macOS Calendar.app"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -14,7 +14,7 @@ authors = [
 ]
 keywords = ["calendar", "macos", "eventkit", "availability", "privacy", "anonymization"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: MacOS X",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
@@ -43,9 +43,9 @@ dev = [
 calendar-availability = "calendar_availability.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/mb2analytics/calendar-availability-export"
-Repository = "https://github.com/mb2analytics/calendar-availability-export"
-Issues = "https://github.com/mb2analytics/calendar-availability-export/issues"
+Homepage = "https://github.com/MMeirelless/calendar-availability-exporter"
+Repository = "https://github.com/MMeirelless/calendar-availability-exporter"
+Issues = "https://github.com/MMeirelless/calendar-availability-exporter/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/calendar_availability"]

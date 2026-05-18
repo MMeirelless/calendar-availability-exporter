@@ -47,9 +47,12 @@ Note: every ad-hoc rebuild produces a fresh code signature, so macOS may prompt 
 ## Usage
 
 1. Pick a week with the prev / Today / next buttons in the sidebar.
-2. Tune the day range, lunch overlay, calendar filter, and "Hide event times" toggle. The chart in the main pane updates live.
-3. Hit **Generate & Copy** (⌘↩) — the chart is rendered at 3600×2200 and copied to the clipboard. Paste anywhere.
-4. **Save as PNG…** (⌘S) — opens a save panel and also copies to the clipboard.
+2. Choose a **Timezone** — defaults to the system timezone, shown as a subtitle on the chart. The visible ISO week is re-anchored when you switch so the same Mon–Sun stays in view.
+3. Tune the day range, lunch overlay, calendar filter, "Include weekends," and "Hide event times" toggles. The chart updates live.
+4. Hit **Generate & Copy** (⌘↩) — the chart is rendered at 3600×2200 and copied to the clipboard. Paste anywhere.
+5. **Save as PNG…** (⌘S) — opens a save panel and also copies to the clipboard.
+
+All events render in a single occupied color (same red/pink as the lunch band) and a "Filled = Unavailable" legend explains the semantic, so the screenshot reads as available vs. blocked time rather than as a calendar leak.
 
 ## Project layout
 
@@ -59,20 +62,24 @@ macapp/
 ├── Info.plist                          # Bundle metadata + Calendar usage description
 ├── CalendarAvailability.entitlements   # (empty; non-sandboxed for local use)
 ├── build.sh                            # swift build → .app bundle → ad-hoc codesign
+├── install.sh                          # Copy bundle into /Applications
+├── Resources/
+│   └── AppIcon.png                     # 1024×1024 source for the app icon
 └── Sources/CalendarAvailability/
     ├── CalendarAvailabilityApp.swift   # @main App scene
     ├── ContentView.swift               # NavigationSplitView + toast overlay
     ├── Theme.swift                     # Catppuccin Mocha palette
     ├── Models/
     │   ├── AnonymizedEvent.swift       # Mirrors the Python anonymization boundary
-    │   └── AvailabilityOptions.swift   # @Observable model bound to the UI
+    │   ├── AvailabilityOptions.swift   # @Observable model bound to the UI
+    │   └── TimeZones.swift             # Common + all-IANA timezone helpers
     ├── Services/
     │   ├── CalendarService.swift       # EventKit access + fetch
     │   └── Exporter.swift              # ImageRenderer → NSImage → clipboard / disk
     └── Views/
         ├── Sidebar.swift               # Glass sidebar with controls + action bar
         ├── ChartArea.swift             # Main chart pane + permission overlays
-        ├── AvailabilityChart.swift     # Canvas renderer (matches render.py)
+        ├── AvailabilityChart.swift     # Canvas renderer (single-color, legend)
         └── CalendarFilterList.swift    # Multi-select calendar toggles
 ```
 

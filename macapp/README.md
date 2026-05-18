@@ -16,6 +16,10 @@ Every push to `main` that touches `macapp/` triggers a GitHub Actions build that
 
 The Command Line Tools alone are **not** sufficient — they ship the macOS 15 SDK at most.
 
+## App icon
+
+Drop a 1024×1024 PNG at `macapp/Resources/AppIcon.png` and `build.sh` will auto-generate `AppIcon.icns` (via `sips` + `iconutil`) and embed it in the bundle on the next build. A neutral placeholder is checked in — replace it with your own design.
+
 ## Build & run
 
 ```sh

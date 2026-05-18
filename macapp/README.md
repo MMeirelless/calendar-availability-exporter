@@ -2,6 +2,10 @@
 
 Native SwiftUI front-end for the [calendar-availability-exporter](../) project. Renders the same anonymized weekly availability chart as the Python CLI, with a Liquid Glass UI and one-click clipboard export.
 
+## Download a prebuilt .app
+
+Every push to `main` that touches `macapp/` triggers a GitHub Actions build that publishes a release. Grab the latest `.zip` from the [Releases page](../../../releases/latest), unzip, drag into `/Applications`, and **right-click → Open** the first time (ad-hoc signed, not notarized).
+
 ## Requirements
 
 - **macOS 26 Tahoe** — Liquid Glass is a Tahoe feature; nothing older will compile against the required APIs.

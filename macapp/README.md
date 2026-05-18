@@ -28,6 +28,18 @@ open "build/Calendar Availability.app"
 
 On first launch macOS prompts for Calendar access — required to read event times. The app reads only `start`, `end`, calendar title, and `isAllDay`. Titles, attendees, notes, and locations are never accessed (same anonymization boundary as the Python `AnonymizedEvent`).
 
+## Install to /Applications
+
+To use the app daily (and find it via Finder / Spotlight / Launchpad), copy the built bundle into `/Applications`:
+
+```sh
+./build.sh && ./install.sh
+```
+
+`install.sh` quits any running instance, replaces `/Applications/Calendar Availability.app`, and strips the quarantine attribute. Re-run it after any rebuild to refresh your daily-use install.
+
+Note: every ad-hoc rebuild produces a fresh code signature, so macOS may prompt for Calendar access again after `install.sh` — re-grant once and you're done.
+
 ## Usage
 
 1. Pick a week with the prev / Today / next buttons in the sidebar.

@@ -28,3 +28,13 @@ credentials.json
 token.json
 *.env
 .env
+
+# Swift / Xcode
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj/
+*.xcworkspace/
+macapp/build/
+*.app
+*.dSYM/

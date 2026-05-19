@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Mac app
+- Differentiate events by `EKEventAvailability` class (busy / tentative / free / unavailable). Each class has its own color **and** texture so the rendered PNG is unambiguous even in greyscale or for colorblind viewers: Busy is solid pink, Tentative is yellow with diagonal stripes, Free is a green dashed outline with faded fill, Unavailable is mauve with cross-hatching. The bottom-right legend renders each visible class with the same fill + texture so it acts as a faithful key.
+- New "Event Types" section in the sidebar with a toggle per availability class. By default Busy, Tentative, and Unavailable are shown; Free is hidden so events explicitly marked Free in Calendar.app don't bleed into the "blocked time" screenshot.
+- `AnonymizedEvent` gains an `availability: EventAvailability` field. `EKEventAvailability.notSupported` (e.g. some Google Calendar accounts) is treated as `.busy`, matching how Calendar.app blocks the slot.
+
 ## [1.0.0] - 2026-05-18
 
 ### Added — Native Mac app (`macapp/`)

@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// The availability grid. Mirrors the spirit of the Python renderer, but
-/// renders all events in a single "occupied" color (same as the lunch
-/// band) so the screenshot reads as available vs. blocked time rather
-/// than as a calendar legend. No per-calendar palette, no legend.
+/// The availability grid. Mirrors the spirit of the Python renderer.
+/// Events are colored by their EKEventAvailability class (busy /
+/// tentative / free / unavailable), and the user picks which classes
+/// to draw via `visibleAvailabilities`. The legend at the bottom-right
+/// shows one row per visible class so the screenshot reads correctly
+/// without the viewer needing context.
 struct AvailabilityChart: View {
     let events: [AnonymizedEvent]
     let weekStart: Date
@@ -13,6 +15,7 @@ struct AvailabilityChart: View {
     let showTimes: Bool
     let includeWeekends: Bool
     let timezone: TimeZone
+    let visibleAvailabilities: Set<EventAvailability>
 
     var body: some View {
         Canvas(rendersAsynchronously: false) { context, size in
@@ -136,10 +139,11 @@ struct AvailabilityChart: View {
             }
         }
 
-        // --- Events (single "occupied" color) -----------------------------
+        // --- Events (colored by availability class) -----------------------
         let timeFmt = dateFormatter("HH:mm")
 
         for ev in events where !ev.isAllDay {
+            guard visibleAvailabilities.contains(ev.availability) else { continue }
             guard let dayIdx = dayIndex(of: ev.start, in: days) else { continue }
 
             let sH = decimalHour(of: ev.start)
@@ -155,24 +159,30 @@ struct AvailabilityChart: View {
             let h = CGFloat((clampedEnd - clampedStart) / totalHours) * chartHeight
 
             let rect = CGRect(x: xLeft, y: yTop, width: w, height: h)
-            let rounded = Path(roundedRect: rect, cornerRadius: 4)
-            context.fill(rounded, with: .color(Theme.occupied.opacity(0.78)))
-            context.stroke(rounded, with: .color(Theme.occupied), lineWidth: 0.5)
+            drawEventBlock(rect: rect,
+                           availability: ev.availability,
+                           context: &context)
 
             if showTimes && h >= 18 {
                 let label = "\(timeFmt.string(from: ev.start)) : \(timeFmt.string(from: ev.end))"
+                // For Free the fill is faded — bg-color text on faded fill on
+                // a dark canvas would vanish, so swap to high-contrast text.
+                let labelColor: Color = (ev.availability == .free) ? Theme.text : Theme.bg
                 context.draw(
                     Text(label)
                         .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(Theme.bg),
+                        .foregroundStyle(labelColor),
                     at: CGPoint(x: xLeft + w / 2, y: yTop + h / 2)
                 )
             }
         }
 
-        // All-day events as small strips above the chart, same occupied color.
+        // All-day events as small strips above the chart. The strips are too
+        // short for hatch textures to be legible, so the differentiation falls
+        // back to color + dashed outline for Free.
         var allDayCount: [Int: Int] = [:]
         for ev in events where ev.isAllDay {
+            guard visibleAvailabilities.contains(ev.availability) else { continue }
             guard let dayIdx = dayIndex(of: ev.start, in: days) else { continue }
             let slot = allDayCount[dayIdx, default: 0]
             allDayCount[dayIdx] = slot + 1
@@ -182,8 +192,16 @@ struct AvailabilityChart: View {
             let stripY = chartY - 4 - CGFloat(slot) * (stripH + gap) - stripH
             let xLeft = chartX + CGFloat(dayIdx) * colWidth + colWidth * 0.08
             let rect = CGRect(x: xLeft, y: stripY, width: colWidth * 0.84, height: stripH)
-            context.fill(Path(roundedRect: rect, cornerRadius: 2),
-                         with: .color(Theme.occupied.opacity(0.65)))
+            let color = Theme.color(for: ev.availability)
+            let path = Path(roundedRect: rect, cornerRadius: 2)
+            if ev.availability == .free {
+                context.fill(path, with: .color(color.opacity(0.25)))
+                context.stroke(path,
+                               with: .color(color),
+                               style: StrokeStyle(lineWidth: 0.8, dash: [2, 2]))
+            } else {
+                context.fill(path, with: .color(color.opacity(0.7)))
+            }
         }
 
         // --- Legend (bottom-right) ----------------------------------------
@@ -194,7 +212,87 @@ struct AvailabilityChart: View {
                    chartHeight: chartHeight)
     }
 
-    /// Single legend entry explaining that filled blocks are blocked time.
+    // MARK: - Per-availability block rendering
+
+    /// Renders an event rect according to its availability class:
+    /// solid for `.busy`, diagonal stripes for `.tentative`, faded +
+    /// dashed border for `.free`, cross-hatch for `.unavailable`.
+    /// The same renderer is used for the legend swatches so the legend
+    /// stays a faithful key to whatever appears on the chart.
+    private func drawEventBlock(
+        rect: CGRect,
+        availability: EventAvailability,
+        context: inout GraphicsContext,
+        cornerRadius: CGFloat = 4
+    ) {
+        let color = Theme.color(for: availability)
+        let path = Path(roundedRect: rect, cornerRadius: cornerRadius)
+
+        switch availability {
+        case .busy:
+            context.fill(path, with: .color(color.opacity(0.78)))
+            context.stroke(path, with: .color(color), lineWidth: 0.5)
+
+        case .tentative:
+            context.fill(path, with: .color(color.opacity(0.55)))
+            drawHatch(in: rect,
+                      clip: path,
+                      cross: false,
+                      context: &context)
+            context.stroke(path, with: .color(color), lineWidth: 0.5)
+
+        case .free:
+            // Faded fill + dashed border — the event exists but doesn't
+            // actually block time, so we deliberately make it look "open".
+            context.fill(path, with: .color(color.opacity(0.22)))
+            context.stroke(path,
+                           with: .color(color),
+                           style: StrokeStyle(lineWidth: 1.0, dash: [4, 3]))
+
+        case .unavailable:
+            context.fill(path, with: .color(color.opacity(0.78)))
+            drawHatch(in: rect,
+                      clip: path,
+                      cross: true,
+                      context: &context)
+            context.stroke(path, with: .color(color), lineWidth: 0.5)
+        }
+    }
+
+    /// Draws diagonal (or cross-) hatching clipped to `clip`. Spacing is
+    /// fixed in points so the pattern reads the same at chart scale and
+    /// at legend-swatch scale.
+    private func drawHatch(
+        in rect: CGRect,
+        clip: Path,
+        cross: Bool,
+        context: inout GraphicsContext
+    ) {
+        let spacing: CGFloat = 5
+        let lineWidth: CGFloat = 0.9
+        let hatchColor = Color.black.opacity(0.32)
+        let diagLen = rect.height
+
+        context.drawLayer { layer in
+            layer.clip(to: clip)
+
+            var path = Path()
+            var x = rect.minX - diagLen
+            while x < rect.maxX + diagLen {
+                path.move(to: CGPoint(x: x, y: rect.maxY))
+                path.addLine(to: CGPoint(x: x + diagLen, y: rect.minY))
+                if cross {
+                    path.move(to: CGPoint(x: x, y: rect.minY))
+                    path.addLine(to: CGPoint(x: x + diagLen, y: rect.maxY))
+                }
+                x += spacing
+            }
+            layer.stroke(path, with: .color(hatchColor), lineWidth: lineWidth)
+        }
+    }
+
+    /// One legend row per visible availability class. Hidden if the user
+    /// turned every class off (nothing to explain).
     private func drawLegend(
         context: inout GraphicsContext,
         chartX: CGFloat,
@@ -202,15 +300,18 @@ struct AvailabilityChart: View {
         chartWidth: CGFloat,
         chartHeight: CGFloat
     ) {
+        let rows = EventAvailability.ordered.filter { visibleAvailabilities.contains($0) }
+        guard !rows.isEmpty else { return }
+
         let padX: CGFloat = 12
         let padY: CGFloat = 8
         let rowHeight: CGFloat = 18
         let swatchSize: CGFloat = 12
         let labelGap: CGFloat = 8
-        let labelW: CGFloat = 110  // fits "Filled = Unavailable" at 11pt
+        let labelW: CGFloat = 92
 
         let boxW = padX * 2 + swatchSize + labelGap + labelW
-        let boxH = padY * 2 + rowHeight
+        let boxH = padY * 2 + rowHeight * CGFloat(rows.count)
 
         let boxX = chartX + chartWidth - boxW - 8
         let boxY = chartY + chartHeight - boxH - 8
@@ -220,23 +321,27 @@ struct AvailabilityChart: View {
         context.fill(bg, with: .color(Theme.surface.opacity(0.92)))
         context.stroke(bg, with: .color(Theme.grid), lineWidth: 0.5)
 
-        let rowY = boxY + padY + rowHeight / 2
-        let swatch = Path(
-            roundedRect: CGRect(x: boxX + padX,
-                                y: rowY - swatchSize / 2,
-                                width: swatchSize,
-                                height: swatchSize),
-            cornerRadius: 3
-        )
-        context.fill(swatch, with: .color(Theme.occupied.opacity(0.85)))
+        for (i, avail) in rows.enumerated() {
+            let rowY = boxY + padY + rowHeight * CGFloat(i) + rowHeight / 2
+            let swatchRect = CGRect(
+                x: boxX + padX,
+                y: rowY - swatchSize / 2,
+                width: swatchSize,
+                height: swatchSize
+            )
+            drawEventBlock(rect: swatchRect,
+                           availability: avail,
+                           context: &context,
+                           cornerRadius: 3)
 
-        context.draw(
-            Text("Filled = Unavailable")
-                .font(.system(size: 11))
-                .foregroundStyle(Theme.text),
-            at: CGPoint(x: boxX + padX + swatchSize + labelGap, y: rowY),
-            anchor: .leading
-        )
+            context.draw(
+                Text(avail.displayName)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.text),
+                at: CGPoint(x: boxX + padX + swatchSize + labelGap, y: rowY),
+                anchor: .leading
+            )
+        }
     }
 
     // MARK: - Helpers

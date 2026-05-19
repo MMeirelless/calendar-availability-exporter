@@ -38,6 +38,25 @@ struct Sidebar: View {
                     Toggle("Hide event times", isOn: $options.hideEventTimes)
                 }
 
+                Section {
+                    ForEach(EventAvailability.ordered) { avail in
+                        Toggle(isOn: availabilityBinding(for: avail)) {
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(Theme.color(for: avail))
+                                    .frame(width: 10, height: 10)
+                                Text(avail.displayName)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Event Types")
+                } footer: {
+                    Text("Pick which availability classes appear on the chart. Events marked Free are hidden by default.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Calendars") {
                     CalendarFilterList()
                 }
@@ -127,6 +146,23 @@ struct Sidebar: View {
             }
         }
         .pickerStyle(.menu)
+    }
+
+    // MARK: - Availability toggle binding
+
+    /// Binds a single EventAvailability case to membership in the
+    /// `visibleAvailabilities` set so a `Toggle` can drive it directly.
+    private func availabilityBinding(for avail: EventAvailability) -> Binding<Bool> {
+        Binding(
+            get: { options.visibleAvailabilities.contains(avail) },
+            set: { isOn in
+                if isOn {
+                    options.visibleAvailabilities.insert(avail)
+                } else {
+                    options.visibleAvailabilities.remove(avail)
+                }
+            }
+        )
     }
 
     // MARK: - Hour stepper

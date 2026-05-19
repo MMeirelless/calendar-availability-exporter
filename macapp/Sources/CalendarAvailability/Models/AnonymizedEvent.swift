@@ -9,6 +9,7 @@ struct AnonymizedEvent: Identifiable, Hashable {
     let end: Date
     let calendar: String
     let isAllDay: Bool
+    let availability: EventAvailability
 
     var durationMinutes: Double {
         end.timeIntervalSince(start) / 60

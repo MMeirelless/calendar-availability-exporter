@@ -37,7 +37,8 @@ struct ChartArea: View {
                 : nil,
             showTimes: !options.hideEventTimes,
             includeWeekends: options.includeWeekends,
-            timezone: options.timezone
+            timezone: options.timezone,
+            visibleAvailabilities: options.visibleAvailabilities
         )
         .padding(20)
     }

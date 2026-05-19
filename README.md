@@ -59,6 +59,7 @@ Features:
 - Adjustable day range and lunch overlay.
 - Calendar multi-select filter.
 - Toggle to include or exclude weekends.
+- Per-availability filtering — Busy / Tentative / Free / Unavailable, each in its own color with a matching legend, so the screenshot only shows the classes you opt in to.
 - **Generate & Copy** (⌘↩) renders at 3600×2200 and puts the PNG on your clipboard for paste-anywhere workflows. **Save as PNG…** (⌘S) writes a file *and* copies.
 
 ## Python CLI

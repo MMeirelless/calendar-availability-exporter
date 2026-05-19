@@ -13,6 +13,23 @@ enum Theme {
     /// matches the lunch overlay so both read as "not available."
     static let occupied = Color(red: 243/255, green: 139/255, blue: 168/255)  // #f38ba8
 
+    // MARK: - Availability palette
+    // One color per EKEventAvailability class, used when the user opts in
+    // to differentiating busy / tentative / free / unavailable on the chart.
+    static let busyColor        = Color(red: 243/255, green: 139/255, blue: 168/255)  // pink   — #f38ba8
+    static let tentativeColor   = Color(red: 249/255, green: 226/255, blue: 175/255)  // yellow — #f9e2af
+    static let freeColor        = Color(red: 166/255, green: 227/255, blue: 161/255)  // green  — #a6e3a1
+    static let unavailableColor = Color(red: 203/255, green: 166/255, blue: 247/255)  // mauve  — #cba6f7
+
+    static func color(for availability: EventAvailability) -> Color {
+        switch availability {
+        case .busy:        return busyColor
+        case .tentative:   return tentativeColor
+        case .free:        return freeColor
+        case .unavailable: return unavailableColor
+        }
+    }
+
     /// Retained but no longer used by the renderer — events are now drawn
     /// in a single `occupied` color so green/yellow accents don't read as
     /// "free time" in the exported screenshot.

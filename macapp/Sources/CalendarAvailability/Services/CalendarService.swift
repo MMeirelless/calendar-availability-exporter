@@ -80,9 +80,24 @@ final class CalendarService {
                 start: ev.startDate,
                 end: ev.endDate,
                 calendar: ev.calendar.title,
-                isAllDay: ev.isAllDay
+                isAllDay: ev.isAllDay,
+                availability: Self.availability(from: ev.availability)
             )
         }
     }
 
+    /// `.notSupported` is what some external accounts (notably some Google
+    /// calendars) report when the field is unset — treat those as busy,
+    /// which is the conservative default and matches how Calendar.app
+    /// blocks the slot.
+    private static func availability(from ek: EKEventAvailability) -> EventAvailability {
+        switch ek {
+        case .busy:        return .busy
+        case .tentative:   return .tentative
+        case .free:        return .free
+        case .unavailable: return .unavailable
+        case .notSupported: return .busy
+        @unknown default:  return .busy
+        }
+    }
 }

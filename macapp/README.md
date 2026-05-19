@@ -49,10 +49,18 @@ Note: every ad-hoc rebuild produces a fresh code signature, so macOS may prompt 
 1. Pick a week with the prev / Today / next buttons in the sidebar.
 2. Choose a **Timezone** — defaults to the system timezone, shown as a subtitle on the chart. The visible ISO week is re-anchored when you switch so the same Mon–Sun stays in view.
 3. Tune the day range, lunch overlay, calendar filter, "Include weekends," and "Hide event times" toggles. The chart updates live.
-4. Hit **Generate & Copy** (⌘↩) — the chart is rendered at 3600×2200 and copied to the clipboard. Paste anywhere.
-5. **Save as PNG…** (⌘S) — opens a save panel and also copies to the clipboard.
+4. In the **Event Types** section, pick which availability classes to draw — Busy, Tentative, Free, Unavailable. Free is off by default so events you've explicitly marked Free in Calendar.app don't bleed into the "blocked time" screenshot, but you can toggle it on.
+5. Hit **Generate & Copy** (⌘↩) — the chart is rendered at 3600×2200 and copied to the clipboard. Paste anywhere.
+6. **Save as PNG…** (⌘S) — opens a save panel and also copies to the clipboard.
 
-All events render in a single occupied color (same red/pink as the lunch band) and a "Filled = Unavailable" legend explains the semantic, so the screenshot reads as available vs. blocked time rather than as a calendar leak.
+Each availability class gets its own color **and** texture so the screenshot is unambiguous even in greyscale or for colorblind viewers:
+
+- **Busy** — solid pink fill.
+- **Tentative** — yellow fill with diagonal stripes.
+- **Free** — green dashed outline, faded fill (signals "the event exists but doesn't actually block").
+- **Unavailable** — mauve fill with cross-hatching.
+
+The legend at the bottom-right renders each visible class with the same fill + texture so it acts as a faithful key to whatever appears on the chart.
 
 ## Project layout
 
@@ -72,6 +80,7 @@ macapp/
     ├── Models/
     │   ├── AnonymizedEvent.swift       # Mirrors the Python anonymization boundary
     │   ├── AvailabilityOptions.swift   # @Observable model bound to the UI
+    │   ├── EventAvailability.swift     # busy / tentative / free / unavailable enum
     │   └── TimeZones.swift             # Common + all-IANA timezone helpers
     ├── Services/
     │   ├── CalendarService.swift       # EventKit access + fetch

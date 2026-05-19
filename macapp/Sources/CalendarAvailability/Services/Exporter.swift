@@ -28,7 +28,8 @@ enum Exporter {
                 : nil,
             showTimes: !options.hideEventTimes,
             includeWeekends: options.includeWeekends,
-            timezone: options.timezone
+            timezone: options.timezone,
+            visibleAvailabilities: options.visibleAvailabilities
         )
         .frame(width: outputSize.width, height: outputSize.height)
         .background(Theme.bg)

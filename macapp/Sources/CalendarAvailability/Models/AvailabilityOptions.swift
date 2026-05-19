@@ -13,6 +13,12 @@ final class AvailabilityOptions {
     var includeWeekends: Bool = true
     var selectedCalendarIDs: Set<String> = []   // empty == include all
 
+    /// Which event-availability classes (busy / tentative / free /
+    /// unavailable) are drawn on the chart. Default is everything *except*
+    /// `.free` — events explicitly marked free are usually noise on a
+    /// "when am I blocked?" screenshot, but the user can toggle them on.
+    var visibleAvailabilities: Set<EventAvailability> = [.busy, .tentative, .unavailable]
+
     /// Timezone used for displaying the chart and computing day/week
     /// boundaries. Defaults to the system timezone. Changing this
     /// preserves the ISO week being viewed — the start moment is

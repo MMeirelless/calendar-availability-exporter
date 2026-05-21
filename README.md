@@ -1,68 +1,74 @@
-# calendar-availability-exporter
+# Calendar Availability Exporter
 
-Share your weekly availability without leaking what's on your calendar. Reads only the structural metadata of your events — start time, end time, source calendar, all-day flag — and renders a fresh image from that. Event titles, attendees, notes, and locations are never loaded into memory in the first place, so there is nothing to redact.
+**Share your weekly availability without leaking what's on your calendar.**
+A native macOS app (and a Python CLI) that reads only the structural metadata of your events — start, end, source calendar, all-day flag — and renders a fresh, paste-anywhere availability chart. Event titles, attendees, notes, and locations are never loaded into memory in the first place, so there is nothing to redact.
 
-> **Status:** v1.0.0 — stable. The Mac app requires macOS 26 (Tahoe); the Python CLI runs on macOS 11+ with Python 3.10+.
+![Platform](https://img.shields.io/badge/macOS-26%20Tahoe-1e88e5)
+![Version](https://img.shields.io/badge/version-1.0.0-2ea44f)
+![License](https://img.shields.io/badge/license-Prosperity%203.0.0-orange)
+![Anonymized](https://img.shields.io/badge/anonymized-by%20construction-7c4dff)
+
+![Weekly availability example](docs/availability_example.png)
+
+## Why I built it
+
+When someone asks *"when are you free next week?"*, the usual options all bad:
+
+1. Keep a handwritten list of free slots — tedious, instantly stale.
+2. Share your full calendar — leaks confidential meeting details to the world.
+3. Screenshot Calendar.app and manually black out titles — fragile, slow, embarrassing if you miss one.
+
+I wanted a fourth option: a one-click chart of *when I'm blocked*, with **zero** event content ever in the rendered image. This project is that fourth option.
 
 ## Two ways to use it
 
 |                 | **Mac app** *(recommended)*                                       | **Python CLI**                                  |
 |-----------------|-------------------------------------------------------------------|-------------------------------------------------|
-| Best for        | Daily ad-hoc use, sharing in Slack/email                          | Automation, scripting, scheduled exports        |
+| Best for        | Daily ad-hoc use, sharing in Slack / email                        | Automation, scripting, scheduled exports        |
 | UI              | Native SwiftUI with Liquid Glass                                  | Command line                                    |
 | Requires        | macOS 26 (Tahoe)                                                  | macOS 11+, Python 3.10+                         |
 | Output          | Clipboard (one click) or PNG                                      | PNG file                                        |
 | Install         | Drop the prebuilt `.app` from [Releases][releases] into `/Applications` | `pip install -e .`                          |
 | Source          | [`macapp/`](macapp/)                                              | [`src/calendar_availability/`](src/calendar_availability/) |
 
-Both share the same anonymization model described below.
+Both share the same anonymization model.
 
 [releases]: ../../releases/latest
-
-## Why this exists
-
-When someone asks *"when are you free next week?"*, the usual options are:
-
-1. Maintain a written list of free slots: tedious and easy to desync.
-2. Share your full calendar: leaks confidential meeting details.
-3. Screenshot Calendar.app and manually black out titles: fragile and slow.
-
-This tool takes a different path. It reads only the structural metadata of your events and renders a fresh image from that. Recurring events are expanded automatically by EventKit.
 
 ## Anonymization model
 
 The data flow is deliberately narrow. The `AnonymizedEvent` model exposes exactly four fields:
 
-| Field      | Type       | Purpose                                |
-|------------|------------|----------------------------------------|
-| `start`    | `datetime` | When the event begins                  |
-| `end`      | `datetime` | When the event ends                    |
-| `calendar` | `str`      | Source calendar title (filter only)    |
+| Field      | Type       | Purpose                                  |
+|------------|------------|------------------------------------------|
+| `start`    | `datetime` | When the event begins                    |
+| `end`      | `datetime` | When the event ends                      |
+| `calendar` | `str`      | Source calendar title (filter only)      |
 | `all_day`  | `bool`     | Render as a top strip instead of a block |
 
-Title, notes, location, attendees, URLs, and attachments are never read from the EventKit objects. They cannot end up in logs, debug output, swap, or the rendered PNG because they are never loaded.
+Title, notes, location, attendees, URLs, and attachments are **never read** from the EventKit objects. They cannot end up in logs, debug output, swap, or the rendered PNG because they are never loaded.
 
-This is anonymization by construction, not post-hoc redaction. The Swift `AnonymizedEvent` in the Mac app mirrors the same boundary.
+This is anonymization *by construction*, not post-hoc redaction. The Swift `AnonymizedEvent` in the Mac app mirrors the same boundary.
 
-In the Mac app, all events render in a single "occupied" color so the output reads as available vs. blocked time, never as a leak of *which* calendar an event belongs to. In the CLI, events are still colored per calendar with generic legend labels (`Calendar 1`, `Calendar 2`, …) — calendar names never appear in the output image.
-
----
+The Mac app additionally differentiates events by their EventKit availability class (busy / tentative / free / unavailable) with both color **and** texture so the screenshot stays readable in greyscale and for colorblind viewers. The CLI still draws one generic color per calendar with anonymous legend labels (`Calendar 1`, `Calendar 2`, …) so calendar names also never appear in the output image.
 
 ## Mac app
 
-The native app lives in [`macapp/`](macapp/). See [`macapp/README.md`](macapp/README.md) for build and install instructions, or grab a prebuilt `.app` from the [Releases page][releases] (every push to `main` that touches `macapp/` publishes a fresh `.zip` via GitHub Actions).
+The native app lives in [`macapp/`](macapp/). See [`macapp/README.md`](macapp/README.md) for build and install instructions, or grab a prebuilt `.app` from the [Releases page][releases] — every push to `main` that touches `macapp/` publishes a fresh `.zip` via GitHub Actions.
 
-Features:
+Highlights:
 
-- Live weekly chart with hour grid, day columns, and ISO-week navigation.
-- Timezone picker (defaults to the system timezone, shown as a subtitle on the chart).
-- Adjustable day range and lunch overlay.
-- Calendar multi-select filter.
-- Toggle to include or exclude weekends.
-- Per-availability filtering — Busy / Tentative / Free / Unavailable, each in its own color with a matching legend, so the screenshot only shows the classes you opt in to.
-- **Generate & Copy** (⌘↩) renders at 3600×2200 and puts the PNG on your clipboard for paste-anywhere workflows. **Save as PNG…** (⌘S) writes a file *and* copies.
+- **Liquid Glass UI** — native macOS 26 sidebar, glass buttons, glass toast.
+- **One click to clipboard** — ⌘↩ renders the chart at 3600×2200 and copies a PNG to the pasteboard for paste-anywhere workflows. ⌘S also saves to disk and copies in one shot.
+- **Timezone picker** — defaults to system timezone, shown as a subtitle on the chart, with full IANA database access.
+- **Weekend toggle** — Mon–Fri or Mon–Sun.
+- **Availability filtering** — Busy / Tentative / Free / Unavailable each get a distinct color *and* texture (solid, diagonal stripes, dashed outline, cross-hatch). Free is off by default so events explicitly marked Free don't pollute the "blocked time" screenshot.
+- **Calendar multi-select** — limit the chart to specific calendars.
 
 ## Python CLI
+
+<details>
+<summary><b>Click to expand the CLI reference</b> — install, usage flags, Python API, launchd automation</summary>
 
 The CLI lives in [`src/calendar_availability/`](src/calendar_availability/) and works on any macOS 11+ system with Python 3.10+. Useful for automated/scheduled exports.
 
@@ -222,14 +228,14 @@ make test       # pytest
 make clean      # Remove build artifacts and caches
 ```
 
----
+</details>
 
 ## Project structure
 
 ```
 calendar-availability-exporter/
 ├── README.md
-├── LICENSE
+├── LICENSE                              # Prosperity Public License 3.0.0
 ├── CHANGELOG.md
 ├── pyproject.toml
 ├── requirements.txt
@@ -261,7 +267,8 @@ calendar-availability-exporter/
 │   ├── __init__.py
 │   └── test_models.py                  # Asserts AnonymizedEvent stays minimal
 └── docs/
-    └── (screenshots)
+    ├── README.md
+    └── availability_example.png        # Hero screenshot used in this README
 ```
 
 ## Roadmap
@@ -275,7 +282,9 @@ calendar-availability-exporter/
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+Licensed under the **Prosperity Public License 3.0.0** — free for personal, hobby, academic, and other noncommercial use forever, with a 30-day commercial trial. Commercial users must contact the maintainer to license production use. See [LICENSE](LICENSE) for the full text.
+
+> The Prosperity license keeps the source visible and modifiable for everyone, while reserving commercial / resale rights to the maintainer. Use it at home, study it, contribute fixes — all welcome. Use it to run a paid product? Get in touch.
 
 ## Maintainer
 

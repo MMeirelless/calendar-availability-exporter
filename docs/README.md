@@ -1,9 +1,7 @@
 # docs
 
-Drop screenshots and supporting documentation here.
+Screenshots and supporting documentation referenced from the root README.
 
-Suggested files:
-- `availability_example.png`: example output of the tool, useful to embed in README.md
-- `architecture.md`: deeper notes on the EventKit data flow if the design evolves
+- `availability_example.png` — sample output of the Mac app, embedded as the hero image in the root README.
 
-This folder is included in version control so the path stays stable for README links. The `.gitignore` at the repo root ignores top level `*.png` outputs but explicitly keeps `docs/availability_example.png`.
+This folder is included in version control so the paths stay stable for README links. The `.gitignore` at the repo root only ignores `data/*.png`, so anything under `docs/` is tracked normally.

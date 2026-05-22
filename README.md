@@ -286,4 +286,4 @@ Licensed under the **Prosperity Public License 3.0.0** — free for personal, ho
 
 ## Maintainer
 
-Built and maintained by [MB2 Analytics](https://mb2analytics.com).
+Built and maintained by Matheus Meirelles ([@MMeirelless](https://github.com/MMeirelless)).

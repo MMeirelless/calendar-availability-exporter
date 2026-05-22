@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [
-    { name = "MB2 Analytics", email = "dev@mb2analytics.com" },
+    { name = "Matheus Meirelles", email = "matheus.meirellessilva@hotmail.com" },
 ]
 keywords = ["calendar", "macos", "eventkit", "availability", "privacy", "anonymization"]
 classifiers = [

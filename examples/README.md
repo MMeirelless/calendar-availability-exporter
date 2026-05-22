@@ -17,7 +17,7 @@ Edit the script to set:
 
 ### 2. Create a launchd agent
 
-Save the following as `~/Library/LaunchAgents/com.mb2analytics.calendar-availability.plist`. Adjust the path to `weekly_export.sh`.
+Save the following as `~/Library/LaunchAgents/local.calendar-availability.plist`. Adjust the path to `weekly_export.sh`.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -25,7 +25,7 @@ Save the following as `~/Library/LaunchAgents/com.mb2analytics.calendar-availabi
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.mb2analytics.calendar-availability</string>
+    <string>local.calendar-availability</string>
 
     <key>ProgramArguments</key>
     <array>
@@ -55,19 +55,19 @@ Save the following as `~/Library/LaunchAgents/com.mb2analytics.calendar-availabi
 ### 3. Load the agent
 
 ```bash
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.mb2analytics.calendar-availability.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/local.calendar-availability.plist
 ```
 
 To unload:
 
 ```bash
-launchctl bootout gui/$(id -u)/com.mb2analytics.calendar-availability
+launchctl bootout gui/$(id -u)/local.calendar-availability
 ```
 
 To trigger immediately for testing:
 
 ```bash
-launchctl kickstart -k gui/$(id -u)/com.mb2analytics.calendar-availability
+launchctl kickstart -k gui/$(id -u)/local.calendar-availability
 ```
 
 ### Notes

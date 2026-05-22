@@ -13,6 +13,10 @@ Native SwiftUI front-end for the [calendar-availability-exporter](../) project. 
    This step is required. Without it, macOS refuses to launch the app and reports that it cannot verify whether the software contains malware. The app is ad-hoc signed but not notarized with an Apple Developer ID, so macOS treats downloads of it as unverified by default.
 4. Launch **Calendar Availability** from Finder, Spotlight, or Launchpad. On first launch macOS asks for Calendar access — required to read event start and end times. Event titles, attendees, notes, and locations are never read.
 
+## Supported calendar accounts
+
+Anything synced to macOS **Calendar.app** is supported — iCloud, Google Calendar, Microsoft 365 / Outlook (Exchange), Fastmail, Yahoo, AOL, any CalDAV server, and local "On My Mac" calendars. If you've added the account under **System Settings → Internet Accounts**, the app reads it through EventKit. You can mix providers in a single chart and filter to specific calendars in the sidebar.
+
 ## Requirements
 
 - **macOS 26 Tahoe** — Liquid Glass is a Tahoe feature; nothing older will compile against the required APIs.

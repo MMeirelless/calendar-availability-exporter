@@ -35,6 +35,19 @@ Both share the same anonymization model.
 
 [releases]: ../../releases/latest
 
+## Works with your calendar
+
+The app reads whatever is synced into macOS **Calendar.app**, so it isn't tied to iCloud or to any one provider. If you've added the account under **System Settings → Internet Accounts**, it shows up:
+
+- **iCloud Calendar**
+- **Google Calendar**
+- **Microsoft 365 / Outlook** (via Exchange or Outlook.com)
+- **Fastmail**, **Yahoo**, **AOL**
+- Any **CalDAV** server (Nextcloud, Zimbra, self-hosted, etc.)
+- Local "On My Mac" calendars
+
+You can mix providers in a single chart and filter to specific calendars in the sidebar.
+
 ## Anonymization model
 
 The data flow is deliberately narrow. The `AnonymizedEvent` model exposes exactly four fields:

@@ -240,9 +240,6 @@ calendar-availability-exporter/
 ├── requirements.txt
 ├── Makefile
 ├── .gitignore
-├── .github/
-│   └── workflows/
-│       └── release-macapp.yml          # Builds + publishes .app on push to main
 ├── src/
 │   └── calendar_availability/
 │       ├── __init__.py                 # Package init, version, public API

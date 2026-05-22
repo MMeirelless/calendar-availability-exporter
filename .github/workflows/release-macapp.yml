@@ -76,22 +76,19 @@ jobs:
           fail_on_unmatched_files: true
           files: macapp/build/${{ steps.meta.outputs.zip_name }}
           body: |
-            Automated build from `main` @ `${{ steps.meta.outputs.short_sha }}`.
-
             ## Install
 
             1. Download **${{ steps.meta.outputs.zip_name }}** below.
-            2. Unzip and drag **Calendar Availability.app** into `/Applications`.
-            3. First launch: **right-click → Open**, then confirm. This is required because the app is ad-hoc signed (not notarized with an Apple Developer ID), so Gatekeeper asks for explicit consent the first time.
+            2. Unzip it and move **Calendar Availability.app** into `/Applications`.
+            3. Open Terminal and run:
 
-            Alternatively, strip the quarantine attribute and launch normally:
+               ```sh
+               xattr -dr com.apple.quarantine "/Applications/Calendar Availability.app"
+               ```
 
-            ```sh
-            xattr -dr com.apple.quarantine "/Applications/Calendar Availability.app"
-            ```
-
-            On first launch, macOS will ask for Calendar access — required to read event times. Titles, attendees, notes, and locations are never read.
+               This step is required. Without it, macOS refuses to launch the app and reports that it cannot verify whether the software contains malware. The app is ad-hoc signed but not notarized with an Apple Developer ID, so macOS treats downloads of it as unverified by default.
+            4. Launch **Calendar Availability** from Finder, Spotlight, or Launchpad. On first launch macOS asks for Calendar access — required to read event start and end times. Event titles, attendees, notes, and locations are never read.
 
             ## Requirements
 
-            macOS 26 (Tahoe) or later. Older versions don't have the Liquid Glass APIs the UI relies on.
+            macOS 26 (Tahoe) or later.

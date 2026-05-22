@@ -2,9 +2,16 @@
 
 Native SwiftUI front-end for the [calendar-availability-exporter](../) project. Renders the same anonymized weekly availability chart as the Python CLI, with a Liquid Glass UI and one-click clipboard export.
 
-## Download a prebuilt .app
+## Install (prebuilt .app)
 
-Every push to `main` that touches `macapp/` triggers a GitHub Actions build that publishes a release. Grab the latest `.zip` from the [Releases page](../../../releases/latest), unzip, drag into `/Applications`, and **right-click → Open** the first time (ad-hoc signed, not notarized).
+1. Grab the latest `Calendar-Availability-*.zip` from the [Releases page](../../../releases/latest).
+2. Unzip it and move **Calendar Availability.app** into `/Applications`.
+3. Open Terminal and run:
+   ```sh
+   xattr -dr com.apple.quarantine "/Applications/Calendar Availability.app"
+   ```
+   This step is required. Without it, macOS refuses to launch the app and reports that it cannot verify whether the software contains malware. The app is ad-hoc signed but not notarized with an Apple Developer ID, so macOS treats downloads of it as unverified by default.
+4. Launch **Calendar Availability** from Finder, Spotlight, or Launchpad. On first launch macOS asks for Calendar access — required to read event start and end times. Event titles, attendees, notes, and locations are never read.
 
 ## Requirements
 
@@ -32,9 +39,9 @@ open "build/Calendar Availability.app"
 
 On first launch macOS prompts for Calendar access — required to read event times. The app reads only `start`, `end`, calendar title, and `isAllDay`. Titles, attendees, notes, and locations are never accessed (same anonymization boundary as the Python `AnonymizedEvent`).
 
-## Install to /Applications
+## Daily-use install from source
 
-To use the app daily (and find it via Finder / Spotlight / Launchpad), copy the built bundle into `/Applications`:
+To use a locally built `.app` daily (and find it via Finder / Spotlight / Launchpad), copy the built bundle into `/Applications`:
 
 ```sh
 ./build.sh && ./install.sh

@@ -24,7 +24,7 @@ I wanted a fourth option: a one-click chart of *when I'm blocked*, with **zero**
 
 |                 | **Mac app** *(recommended)*                                       | **Python CLI**                                  |
 |-----------------|-------------------------------------------------------------------|-------------------------------------------------|
-| Best for        | Daily ad-hoc use, sharing in Slack / email                        | Automation, scripting, scheduled exports        |
+| Best for        | Daily ad-hoc use, sharing in chat / email                        | Automation, scripting, scheduled exports        |
 | UI              | Native SwiftUI with Liquid Glass                                  | Command line                                    |
 | Requires        | macOS 26 (Tahoe)                                                  | macOS 11+, Python 3.10+                         |
 | Output          | Clipboard (one click) or PNG                                      | PNG file                                        |
@@ -54,11 +54,10 @@ The Mac app additionally differentiates events by their EventKit availability cl
 
 ## Mac app
 
-The native app lives in [`macapp/`](macapp/). See [`macapp/README.md`](macapp/README.md) for build and install instructions, or grab a prebuilt `.app` from the [Releases page][releases] — every push to `main` that touches `macapp/` publishes a fresh `.zip` via GitHub Actions.
+The native app lives in [`macapp/`](macapp/). See [`macapp/README.md`](macapp/README.md) for build and install instructions, or grab a prebuilt `.app` from the [Releases page][releases].
 
 Highlights:
 
-- **Liquid Glass UI** — native macOS 26 sidebar, glass buttons, glass toast.
 - **One click to clipboard** — ⌘↩ renders the chart at 3600×2200 and copies a PNG to the pasteboard for paste-anywhere workflows. ⌘S also saves to disk and copies in one shot.
 - **Timezone picker** — defaults to system timezone, shown as a subtitle on the chart, with full IANA database access.
 - **Weekend toggle** — Mon–Fri or Mon–Sun.
@@ -278,7 +277,6 @@ calendar-availability-exporter/
 - `--free` inverse mode that highlights free slots instead of busy slots
 - Microsoft 365 backend (read availability from Outlook directly)
 - Multi-week view (4-week strip for longer planning horizons)
-- Developer ID signing + notarization for the Mac app (drops the right-click → Open friction on first launch)
 
 ## License
 

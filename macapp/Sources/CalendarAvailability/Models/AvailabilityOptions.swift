@@ -3,34 +3,114 @@ import Observation
 
 @Observable
 final class AvailabilityOptions {
+    /// `weekStart` is intentionally transient — every launch begins on
+    /// the current ISO week regardless of where the user was when they
+    /// quit. Everything else round-trips through `PreferencesStore`.
     var weekStart: Date
-    var dayStartHour: Int = 9
-    var dayEndHour: Int = 20
-    var lunchEnabled: Bool = true
-    var lunchStartHour: Int = 12
-    var lunchEndHour: Int = 14
-    var hideEventTimes: Bool = false
-    var includeWeekends: Bool = true
-    var selectedCalendarIDs: Set<String> = []   // empty == include all
+
+    var dayStartHour: Int {
+        didSet { store.set(dayStartHour, for: PreferencesStore.Keys.dayStartHour) }
+    }
+    var dayEndHour: Int {
+        didSet { store.set(dayEndHour, for: PreferencesStore.Keys.dayEndHour) }
+    }
+    var lunchEnabled: Bool {
+        didSet { store.set(lunchEnabled, for: PreferencesStore.Keys.lunchEnabled) }
+    }
+    var lunchStartHour: Int {
+        didSet { store.set(lunchStartHour, for: PreferencesStore.Keys.lunchStartHour) }
+    }
+    var lunchEndHour: Int {
+        didSet { store.set(lunchEndHour, for: PreferencesStore.Keys.lunchEndHour) }
+    }
+    var hideEventTimes: Bool {
+        didSet { store.set(hideEventTimes, for: PreferencesStore.Keys.hideEventTimes) }
+    }
+    var includeWeekends: Bool {
+        didSet { store.set(includeWeekends, for: PreferencesStore.Keys.includeWeekends) }
+    }
+    var selectedCalendarIDs: Set<String> {
+        didSet {
+            store.set(Array(selectedCalendarIDs),
+                      for: PreferencesStore.Keys.selectedCalendarIDs)
+        }
+    }
 
     /// Which event-availability classes (busy / tentative / free /
     /// unavailable) are drawn on the chart. Default is everything *except*
     /// `.free` — events explicitly marked free are usually noise on a
     /// "when am I blocked?" screenshot, but the user can toggle them on.
-    var visibleAvailabilities: Set<EventAvailability> = [.busy, .tentative, .unavailable]
+    var visibleAvailabilities: Set<EventAvailability> {
+        didSet {
+            store.set(visibleAvailabilities.map(\.rawValue),
+                      for: PreferencesStore.Keys.visibleAvailabilities)
+        }
+    }
 
     /// Timezone used for displaying the chart and computing day/week
     /// boundaries. Defaults to the system timezone. Changing this
     /// preserves the ISO week being viewed — the start moment is
     /// recomputed so the same Monday–Sunday window stays visible.
     var timezone: TimeZone {
-        didSet { rebaseWeekStart(from: oldValue) }
+        didSet {
+            rebaseWeekStart(from: oldValue)
+            store.set(timezone.identifier,
+                      for: PreferencesStore.Keys.timezoneIdentifier)
+        }
     }
 
-    init() {
-        let tz = TimeZone.current
+    private let store: PreferencesStore
+
+    init(store: PreferencesStore = .shared) {
+        self.store = store
+
+        self.dayStartHour      = store.int(PreferencesStore.Keys.dayStartHour,      default: 9)
+        self.dayEndHour        = store.int(PreferencesStore.Keys.dayEndHour,        default: 20)
+        self.lunchEnabled      = store.bool(PreferencesStore.Keys.lunchEnabled,     default: true)
+        self.lunchStartHour    = store.int(PreferencesStore.Keys.lunchStartHour,    default: 12)
+        self.lunchEndHour      = store.int(PreferencesStore.Keys.lunchEndHour,      default: 14)
+        self.hideEventTimes    = store.bool(PreferencesStore.Keys.hideEventTimes,   default: false)
+        self.includeWeekends   = store.bool(PreferencesStore.Keys.includeWeekends,  default: true)
+
+        if let savedIDs = store.stringArray(PreferencesStore.Keys.selectedCalendarIDs) {
+            self.selectedCalendarIDs = Set(savedIDs)
+        } else {
+            self.selectedCalendarIDs = []
+        }
+
+        if let savedRaws = store.stringArray(PreferencesStore.Keys.visibleAvailabilities) {
+            self.visibleAvailabilities = Set(savedRaws.compactMap(EventAvailability.init(rawValue:)))
+        } else {
+            self.visibleAvailabilities = [.busy, .tentative, .unavailable]
+        }
+
+        let tz: TimeZone
+        if let id = store.string(PreferencesStore.Keys.timezoneIdentifier),
+           let saved = TimeZone(identifier: id) {
+            tz = saved
+        } else {
+            tz = .current
+        }
         self.timezone = tz
         self.weekStart = Self.startOfISOWeek(containing: Date(), in: tz)
+    }
+
+    /// Restore every persisted property to its literal default. The
+    /// per-property `didSet` blocks re-write the cleared keys, so disk
+    /// stays in sync.
+    func resetToDefaults() {
+        store.reset()
+        dayStartHour         = 9
+        dayEndHour           = 20
+        lunchEnabled         = true
+        lunchStartHour       = 12
+        lunchEndHour         = 14
+        hideEventTimes       = false
+        includeWeekends      = true
+        selectedCalendarIDs  = []
+        visibleAvailabilities = [.busy, .tentative, .unavailable]
+        timezone             = .current
+        weekStart            = Self.startOfISOWeek(containing: Date(), in: timezone)
     }
 
     var weekEnd: Date {

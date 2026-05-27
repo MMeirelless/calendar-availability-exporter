@@ -7,6 +7,8 @@ struct Sidebar: View {
     let onGenerate: () -> Void
     let onSave: () -> Void
 
+    @State private var showResetConfirm = false
+
     var body: some View {
         @Bindable var options = options
 
@@ -60,9 +62,35 @@ struct Sidebar: View {
                 Section("Calendars") {
                     CalendarFilterList()
                 }
+
+                Section {
+                    Button(role: .destructive) {
+                        showResetConfirm = true
+                    } label: {
+                        Label("Reset all settings", systemImage: "arrow.counterclockwise")
+                    }
+                } header: {
+                    Text("Preferences")
+                } footer: {
+                    Text("Restore every option above to its default. Does not affect your calendar data.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
+            .confirmationDialog(
+                "Reset all settings to defaults?",
+                isPresented: $showResetConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Reset", role: .destructive) {
+                    options.resetToDefaults()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Day range, lunch overlay, timezone, calendar selection, event-type filters, and other display options return to their defaults.")
+            }
 
             actionBar
         }

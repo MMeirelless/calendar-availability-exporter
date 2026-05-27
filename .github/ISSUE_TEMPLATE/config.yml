@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & Q&A
+    url: https://github.com/MMeirelless/calendar-availability-exporter/discussions/categories/q-a
+    about: Have a usage question? Ask in Discussions, not Issues.
+  - name: Ideas & feature brainstorming
+    url: https://github.com/MMeirelless/calendar-availability-exporter/discussions/categories/ideas
+    about: Pitch and discuss a feature before opening a formal request.
+  - name: Show and tell
+    url: https://github.com/MMeirelless/calendar-availability-exporter/discussions/categories/show-and-tell
+    about: Share how you're using the tool, your setup, or your charts.

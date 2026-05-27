@@ -1,0 +1,97 @@
+name: Bug report
+description: Something is broken or behaving in a way that contradicts the docs.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug.
+
+        **Before you continue**, please search [existing issues](https://github.com/MMeirelless/calendar-availability-exporter/issues?q=is%3Aissue) and [Discussions](https://github.com/MMeirelless/calendar-availability-exporter/discussions) — your problem may already be tracked.
+
+        ⚠️ The whole point of this project is that you don't need to leak real calendar content. **Please don't attach screenshots that contain real, un-anonymized event titles, attendees, or locations.** Re-create the issue with a dummy calendar if needed.
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which surface is affected?
+      options:
+        - macOS app
+        - Python CLI
+        - Both
+        - Other (please describe below)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: App or package version
+      description: For the Mac app, see *About Calendar Availability*. For the CLI, run `pip show calendar-availability` or check `calendar_availability.__version__`.
+      placeholder: "e.g. 1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "e.g. 26.1 (Tahoe)"
+    validations:
+      required: false
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version (CLI only)
+      placeholder: "e.g. 3.12.4"
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear, concise description of the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps that let someone else hit the same bug.
+      placeholder: |
+        1. Open the app on…
+        2. Click…
+        3. Observe…
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs. actual behavior
+      description: What did you expect to happen, and what actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, errors, or screenshots
+      description: Paste any error output here. Wrap long blocks in triple backticks. Redact anything calendar-content-related before attaching.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirms
+    attributes:
+      label: Confirmations
+      options:
+        - label: I searched existing issues and Discussions before filing.
+          required: true
+        - label: Any screenshots or logs I attached do **not** contain real event titles, attendees, locations, or other private calendar content.
+          required: true

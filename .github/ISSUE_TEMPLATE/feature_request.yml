@@ -1,0 +1,68 @@
+name: Feature request
+description: Propose a new feature or a substantive change to existing behavior.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing an idea.
+
+        **Before filing**, please check [Discussions → Ideas](https://github.com/MMeirelless/calendar-availability-exporter/discussions/categories/ideas) — early-stage brainstorming belongs there. Open a formal feature request only when the idea is concrete enough to scope and implement.
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which surface should this affect?
+      options:
+        - macOS app
+        - Python CLI
+        - Both
+        - New surface (please describe below)
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What painful thing happens today that this feature would address?
+      placeholder: "Today, when I…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should happen instead? Be as concrete as you can — UI sketches, CLI flag names, sample output.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you thought about and why they're worse.
+    validations:
+      required: false
+
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy / anonymization impact
+      description: |
+        This project's guarantee is that event titles, notes, locations, attendees, URLs, and attachments are **never read into memory**. Does this feature touch that boundary? If it does, explain how the guarantee is preserved (or why it should be relaxed).
+      placeholder: "This feature does not change which event fields are read. / This feature would require reading event titles because…"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirms
+    attributes:
+      label: Confirmations
+      options:
+        - label: I checked Discussions → Ideas and existing issues before opening this.
+          required: true
+        - label: I have read the anonymization model in the README and understand it is non-negotiable without explicit maintainer agreement.
+          required: true

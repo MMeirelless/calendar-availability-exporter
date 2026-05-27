@@ -4,7 +4,7 @@
 A native macOS app (and a Python CLI) that reads only the structural metadata of your events — start, end, source calendar, all-day flag — and renders a fresh, paste-anywhere availability chart. Event titles, attendees, notes, and locations are never loaded into memory in the first place, so there is nothing to redact.
 
 ![Platform](https://img.shields.io/badge/macOS-26%20Tahoe-1e88e5)
-![Version](https://img.shields.io/badge/version-1.0.0-2ea44f)
+[![Latest release](https://img.shields.io/github/v/release/MMeirelless/calendar-availability-exporter?color=2ea44f&label=release)](https://github.com/MMeirelless/calendar-availability-exporter/releases/latest)
 ![License](https://img.shields.io/badge/license-Prosperity%203.0.0-orange)
 ![Anonymized](https://img.shields.io/badge/anonymized-by%20construction-7c4dff)
 

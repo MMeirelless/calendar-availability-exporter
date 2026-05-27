@@ -115,6 +115,20 @@ The `release-macapp.yml` workflow under `.github/workflows/` reacts to pushes th
 
 If you adopt **semantic versioning** (recommended once 1.0 is reached): bump **major** for breaking changes, **minor** for new features that stay compatible, **patch** for bug fixes.
 
+## Downloading a build per branch
+
+The CI workflow (`.github/workflows/release-macapp.yml`) publishes a `.app` build for every push to `dev`, `test`, and `main` (when something under `macapp/` changes). Where it lands depends on the branch:
+
+| Branch | Release behavior | Where to find it |
+|--------|-----------------|------------------|
+| `main` | Versioned release `v0.0.N` (N = workflow run number). Marked as **Latest**. Immutable. | [Releases page](https://github.com/MMeirelless/calendar-availability-exporter/releases) — top entry. |
+| `test` | Rolling prerelease tagged `test-build`. **Always reflects the latest `test` commit** — the previous asset is replaced. | Releases page — look for *"Test build — test @ <sha>"*. |
+| `dev`  | Rolling prerelease tagged `dev-build`. Always reflects the latest `dev` commit. | Releases page — look for *"Development build — dev @ <sha>"*. |
+
+The rolling tags (`dev-build`, `test-build`) are *mutable on purpose* — they're channels, not versions. If you need a specific historical build of `dev` or `test`, the workflow run still has the artifacts available under the Actions tab for 90 days, and the commit SHA in the release body is the source of truth.
+
+Only the `main` releases are immutable and counted as proper versions. **Don't link external docs to `dev-build` or `test-build` URLs** — only link to `v0.0.N` tags for anything you want to stay stable.
+
 ## Resetting `dev` after a release
 
 Right after a release, `dev`, `test`, and `main` should all point at the same commit. New feature branches branch off `dev` as normal — no special reset step is needed if the promotion path used fast-forward merges. If you used merge commits, `dev` will already match `main` in content; just keep going.

@@ -2,7 +2,7 @@ name: Release macOS app
 
 on:
   push:
-    branches: [main]
+    branches: [main, test, dev]
     # Only rebuild + publish when something that affects the .app changes.
     paths:
       - 'macapp/**'
@@ -13,7 +13,8 @@ permissions:
   contents: write   # required to create/update GitHub Releases
 
 concurrency:
-  group: release-macapp
+  # Per-branch group so a dev push doesn't queue behind a main push.
+  group: release-macapp-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -44,18 +45,56 @@ jobs:
         working-directory: macapp
         run: ./build.sh
 
-      - name: Compute version / tag
+      - name: Compute release metadata
         id: meta
         run: |
-          VERSION="0.0.${GITHUB_RUN_NUMBER}"
+          BRANCH="${GITHUB_REF_NAME}"
           SHORT_SHA="$(git rev-parse --short HEAD)"
-          TAG="v${VERSION}"
-          ZIP_NAME="Calendar-Availability-${VERSION}.zip"
+
+          case "$BRANCH" in
+            main)
+              VERSION="0.0.${GITHUB_RUN_NUMBER}"
+              TAG="v${VERSION}"
+              NAME="Calendar Availability ${VERSION}"
+              ZIP_NAME="Calendar-Availability-${VERSION}.zip"
+              PRERELEASE="false"
+              MAKE_LATEST="true"
+              ROLLING="false"
+              ;;
+            test)
+              VERSION="test-${SHORT_SHA}"
+              TAG="test-build"
+              NAME="Test build — test @ ${SHORT_SHA}"
+              ZIP_NAME="Calendar-Availability-test-${SHORT_SHA}.zip"
+              PRERELEASE="true"
+              MAKE_LATEST="false"
+              ROLLING="true"
+              ;;
+            dev)
+              VERSION="dev-${SHORT_SHA}"
+              TAG="dev-build"
+              NAME="Development build — dev @ ${SHORT_SHA}"
+              ZIP_NAME="Calendar-Availability-dev-${SHORT_SHA}.zip"
+              PRERELEASE="true"
+              MAKE_LATEST="false"
+              ROLLING="true"
+              ;;
+            *)
+              echo "Unknown branch: $BRANCH — refusing to publish" >&2
+              exit 1
+              ;;
+          esac
+
           {
+            echo "branch=${BRANCH}"
             echo "version=${VERSION}"
             echo "short_sha=${SHORT_SHA}"
             echo "tag=${TAG}"
+            echo "name=${NAME}"
             echo "zip_name=${ZIP_NAME}"
+            echo "prerelease=${PRERELEASE}"
+            echo "make_latest=${MAKE_LATEST}"
+            echo "rolling=${ROLLING}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Zip .app (preserve bundle structure)
@@ -66,16 +105,33 @@ jobs:
             "${{ steps.meta.outputs.zip_name }}"
           ls -lh "${{ steps.meta.outputs.zip_name }}"
 
+      - name: Clear existing rolling release (dev / test only)
+        if: steps.meta.outputs.rolling == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Delete the previous rolling release + tag if it exists. The
+          # `|| true` guard handles the very first run when nothing is
+          # there to delete yet.
+          gh release delete "${{ steps.meta.outputs.tag }}" \
+            --yes --cleanup-tag \
+            --repo "${{ github.repository }}" || true
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
-          name: "Calendar Availability ${{ steps.meta.outputs.version }}"
+          name: ${{ steps.meta.outputs.name }}
           target_commitish: ${{ github.sha }}
-          make_latest: 'true'
+          prerelease: ${{ steps.meta.outputs.prerelease }}
+          make_latest: ${{ steps.meta.outputs.make_latest }}
           fail_on_unmatched_files: true
           files: macapp/build/${{ steps.meta.outputs.zip_name }}
           body: |
+            **Branch:** `${{ steps.meta.outputs.branch }}`
+            **Commit:** `${{ steps.meta.outputs.short_sha }}`
+            **Workflow run:** [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
             ## Install
 
             1. Download **${{ steps.meta.outputs.zip_name }}** below.

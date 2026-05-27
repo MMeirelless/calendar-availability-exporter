@@ -57,6 +57,8 @@ The repository uses three long-lived branches:
 - **`test`** — preproduction / release candidate. `dev` is promoted into `test` when a release is being prepared, so it can soak.
 - **`dev`** — active integration branch. **This is the default target for pull requests.**
 
+See [`docs/WORKFLOW.md`](docs/WORKFLOW.md) for the full promotion flow, including how to cut a release and roll a hotfix.
+
 Branch your feature off `dev`:
 
 ```bash
